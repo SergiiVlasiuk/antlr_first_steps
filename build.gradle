@@ -1,0 +1,122 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'antlr'
+}
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+repositories {
+    mavenCentral()
+}
+
+configurations{
+    antlr
+}
+
+task runExpr(type:JavaExec) {
+    println '[' + name + '] starts'
+    classpath = configurations.antlr
+
+    mainClass = "org.antlr.v4.Tool"
+
+    workingDir "src/main/expr"
+    args = [ "-visitor",
+             "-o",  "$projectDir/build/generated-src/antlr/main"
+             , "-package", "org.demo"
+             , "org/demo/Expr.g4"
+    ]
+    println '[' + name + '] ends'
+}
+
+task runEECS4302_visitor(type:JavaExec) {
+    println '[' + name + '] starts'
+    classpath = configurations.antlr
+
+    mainClass = "org.antlr.v4.Tool"
+
+    workingDir "src/main/EECS4302_visitor"
+    args = [ "-visitor",
+             "-o",  "$projectDir/build/generated-src/antlr/main"
+             , "-package", "org.EECS4302.visitor"
+             , "org/EECS4302/visitor/Expr.g4"
+    ]
+    println '[' + name + '] ends'
+}
+task runEECS4302_action(type:JavaExec) {
+    println '[' + name + '] starts'
+    classpath = configurations.antlr
+
+    mainClass = "org.antlr.v4.Tool"
+
+    workingDir "src/main/EECS4302_action"
+    args = [ "-no-listener",
+             "-o",  "$projectDir/build/generated-src/antlr/main"
+//             , "-package", "org.EECS4302.action"
+             , "org/EECS4302/action/Expr.g4"
+    ]
+    println '[' + name + '] ends'
+}
+
+compileJava {
+    dependsOn 'runExpr'
+    dependsOn 'runEECS4302_visitor'
+    dependsOn 'runEECS4302_action'
+}
+
+dependencies {
+    implementation "org.antlr:antlr4:$antlrVersion"
+    implementation "org.antlr:antlr4-runtime:$antlrVersion"
+    antlr "org.antlr:antlr4:$antlrVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    testImplementation "org.projectlombok:lombok:$lombokVersion"
+    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+//    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testCompileOnly 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+def generatedJavaSourcesDir = "src/main/antlr"
+def generatedSources = [
+        rootDir: 'src/generated',
+        javaDir: 'src/generated/java'
+]
+
+////    arguments << "-lib" << "src/main/antlr/calc"
+generateGrammarSource {
+    maxHeapSize = "128m"
+    arguments += ['-visitor'
+                  , "-package", "org.antlr.calc"
+//                  , "-o", "${generatedSources.javaDir}/org/antlr/calc".toString()
+    ]
+//    println 'outputDirectory: ' + outputDirectory.toString()
+////    outputDirectory += "/com/antlr/calc"
+//    outputDirectory = file("${outputDirectory.toString()}/com/antlr/calc")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir generatedSources.javaDir
+        }
+    }
+}
+
+clean {
+    delete generatedSources.rootDir
+}
+
+test {
+    useJUnitPlatform()
+}
